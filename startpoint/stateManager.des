@@ -1,0 +1,95 @@
+INITIALIZER:
+    import threading
+    from Tkinter import *
+    from DWatchGUI import DWatchGUI
+    from LowLevelGUI import LowLevelGUI
+
+    root = Tk()
+    root.title("My watch")
+
+    dWatchGUI = DWatchGUI(root, eventhandler)
+    #lowLevelGUI = LowLevelGUI(root, eventhandler)
+
+    eventhandler.start()
+
+    t_end = time.time() + 3
+    while time.time() < t_end:
+        print 'Hello World!'
+        time.sleep(1)
+
+    root.mainloop()
+
+STATECHART:
+    NormalTimeDisplay [DS]
+    LightOn
+    DisplayAlarmMode
+    EditAlarmMode
+    ChronoMode
+    ChronoIncreasing
+    TimeEditingMode
+
+TRANSITION:
+    S: NormalTimeDisplay
+    N: LightOn
+    E: lightOn
+    O: print "NormalTimeDisplay -> LightOn"
+       dWatchGUI.setIndiglo()
+       
+TRANSITION:
+    S: LightOn
+    N: NormalTimeDisplay
+    E: lightOff
+    O: print "NormalTimeDisplay -> LightOn"
+       time.sleep(2)
+       dWatchGUI.unsetIndiglo()
+
+TRANSITION:
+    S: NormalTimeDisplay
+    N: DisplayAlarmMode
+    E: setAlarm
+    O: print "NormalTimeDisplay -> DisplayAlarmMode"
+       dWatchGUI.refreshAlarmDisplay()
+
+TRANSITION:
+    S: DisplayAlarmMode
+    N: NormalTimeDisplay
+    E: onoff
+    O: print "DisplayAlarm -> NormalTimeDisplay"
+       dWatchGUI.refreshTimeDisplay()
+
+TRANSITION:
+    S: NormalTimeDisplay
+    N: ChronoMode
+    E: changeMode
+    O: print "NormalTimeDisplay -> ChronoMode"
+       dWatchGUI.refreshChronoDisplay()
+
+TRANSITION:
+    S: ChronoMode
+    N: NormalTimeDisplay
+    E: changeMode
+    O: print "ChronoMode -> NormalTimeDisplay"
+       dWatchGUI.refreshTimeDisplay()
+
+TRANSITION:
+    S: ChronoMode
+    N: ChronoIncreasing
+    E: editTime
+    O: print "ChronoMode -> ChronoIncreasing"
+       dWatchGUI.displayIncreaseChronoByOne()
+          
+
+TRANSITION:
+    S: ChronoIncreasing
+    N: ChronoMode
+    E: finishEdit
+    O: print "ChronoIncreasing -> ChronoMode"
+       dWatchGUI.refreshChronoDisplay()
+
+TRANSITION:
+    S: NormalTimeDisplay
+    N: TimeEditingMode
+    E: editTime
+    O: print "NormalTimeDisplay -> TimeEditingMode"
+       time.sleep(1.5)
+       #Stop time running???
