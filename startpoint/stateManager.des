@@ -1,8 +1,32 @@
 INITIALIZER:
-    import threading
+    
     from Tkinter import *
     from DWatchGUI import DWatchGUI
     from LowLevelGUI import LowLevelGUI
+    from threading import Thread
+
+    timeDisplayMode = True
+    def updateTimeTask():
+        print 'updateTimeTask!'
+        t_end = time.time() + 100
+        while time.time() < t_end:
+            print 'Hello updateTimeTask! 1' + str(time.time())
+            print timeDisplayMode
+            print '1'
+            #dWatchGUI.increaseTimeByOne()
+            dWatchGUI.increaseTimeByOne()
+            if timeDisplayMode:
+                dWatchGUI.refreshTimeDisplay()
+            time.sleep(1)
+    
+    def updateChronoTask():
+        print 'updateChronoTask!'
+        t_end = time.time() + 100
+        while time.time() < t_end:
+            print 'Hello updateChronoTask!' + str(time.time())
+            dWatchGUI.increaseChronoByOne()
+            dWatchGUI.refreshChronoDisplay()
+            time.sleep(1)
 
     root = Tk()
     root.title("My watch")
@@ -12,12 +36,31 @@ INITIALIZER:
 
     eventhandler.start()
 
-    t_end = time.time() + 3
-    while time.time() < t_end:
-        print 'Hello World!'
-        time.sleep(1)
+    #create a list of threads
+    threads = []
+    # thread 1: update display time
+    updateTime = Thread(target=updateTimeTask)
+    updateTime.setDaemon(True)
+    updateTime.start()
+
+    updateChrono = Thread(target=updateChronoTask)
+    updateChrono.setDaemon(True)
+    #updateChrono.start()
+
+    #threads.append( updateTime )
+
+    # thread 2: update chrono
+
+    # thread 3: check alarm 
+
+    #t_end = time.time() + 3
+    #while time.time() < t_end:
+    #    print 'Hello World!' + str(time.time())
+    #    time.sleep(1)
 
     root.mainloop()
+
+    
 
 STATECHART:
     NormalTimeDisplay [DS]
@@ -62,6 +105,7 @@ TRANSITION:
     N: ChronoMode
     E: changeMode
     O: print "NormalTimeDisplay -> ChronoMode"
+       timeDisplayMode = False
        dWatchGUI.refreshChronoDisplay()
 
 TRANSITION:
@@ -69,6 +113,7 @@ TRANSITION:
     N: NormalTimeDisplay
     E: changeMode
     O: print "ChronoMode -> NormalTimeDisplay"
+       timeDisplayMode = True
        dWatchGUI.refreshTimeDisplay()
 
 TRANSITION:
@@ -76,7 +121,7 @@ TRANSITION:
     N: ChronoIncreasing
     E: editTime
     O: print "ChronoMode -> ChronoIncreasing"
-       dWatchGUI.displayIncreaseChronoByOne()
+       updateChrono.start()
           
 
 TRANSITION:

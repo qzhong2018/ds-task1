@@ -79,7 +79,7 @@ class DWatchGUI:
  
   def increaseTimeByOne(self):
     self.GUI.increaseTimeByOne()
-    self.refreshTimeDisplay()    
+    #self.refreshTimeDisplay()    
  
   def resetChrono(self):
     self.GUI.resetChrono()
@@ -127,19 +127,6 @@ class DWatchGUI:
       return True
     else:
       return False
-
-
-  def displayIncreaseChronoByOne(self):
-    t_end = time.time() + 10
-    try:
-        while ( more ) and (time.time() < t_end):
-            print 'Hello World!'
-            print 
-            self.GUI.increaseChronoByOne()
-            self.GUI.drawChrono()
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print('interrupted!')
       
   def finishIncreaseChronoByOne(self):
     more = False
