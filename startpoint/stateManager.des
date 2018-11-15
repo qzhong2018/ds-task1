@@ -1,32 +1,10 @@
 INITIALIZER:
-    
-    from Tkinter import *
+    try:
+        from tkinter import *
+    except ImportError:
+        from Tkinter import *
     from DWatchGUI import DWatchGUI
     from LowLevelGUI import LowLevelGUI
-    from threading import Thread
-
-    timeDisplayMode = True
-    def updateTimeTask():
-        print 'updateTimeTask!'
-        t_end = time.time() + 100
-        while time.time() < t_end:
-            print 'Hello updateTimeTask! 1' + str(time.time())
-            print timeDisplayMode
-            print '1'
-            #dWatchGUI.increaseTimeByOne()
-            dWatchGUI.increaseTimeByOne()
-            if timeDisplayMode:
-                dWatchGUI.refreshTimeDisplay()
-            time.sleep(1)
-    
-    def updateChronoTask():
-        print 'updateChronoTask!'
-        t_end = time.time() + 100
-        while time.time() < t_end:
-            print 'Hello updateChronoTask!' + str(time.time())
-            dWatchGUI.increaseChronoByOne()
-            dWatchGUI.refreshChronoDisplay()
-            time.sleep(1)
 
     root = Tk()
     root.title("My watch")
@@ -36,105 +14,194 @@ INITIALIZER:
 
     eventhandler.start()
 
-    #create a list of threads
-    threads = []
-    # thread 1: update display time
-    updateTime = Thread(target=updateTimeTask)
-    updateTime.setDaemon(True)
-    updateTime.start()
-
-    updateChrono = Thread(target=updateChronoTask)
-    updateChrono.setDaemon(True)
-    #updateChrono.start()
-
-    #threads.append( updateTime )
-
-    # thread 2: update chrono
-
-    # thread 3: check alarm 
-
-    #t_end = time.time() + 3
-    #while time.time() < t_end:
-    #    print 'Hello World!' + str(time.time())
-    #    time.sleep(1)
-
     root.mainloop()
 
-    
-
 STATECHART:
-    NormalTimeDisplay [DS]
-    LightOn
-    DisplayAlarmMode
-    EditAlarmMode
-    ChronoMode
-    ChronoIncreasing
-    TimeEditingMode
+    DisplayMode [CS] [DS]
+        TimeDisplay [DS]
+        ChronoDisplay
+        ChronoInit
+        AlarmDisplay
+        AlarmEdit
+        TimeEdit
+    BgLight [CS] [DS]
+        LightOff [DS]
+        LightOn
+
+    TimeRunning [CS] [DS]
+        RuningOn [DS]
+        RuningOff
+    
+    ChronoRunning [CS] [DS]
+        RuningOff [DS]
+        RuningOn
+
+    Alarming [CS] [DS]
+        Off [DS]
+        On
 
 TRANSITION:
-    S: NormalTimeDisplay
-    N: LightOn
-    E: lightOn
-    O: print "NormalTimeDisplay -> LightOn"
+    S: Alarming.Off
+    N: Alarming.On
+    T: 1
+    C: dWatchGUI.checkTime()
+    O: print "Alarming.Off -> Alarming.On!!!!"
        dWatchGUI.setIndiglo()
-       
+
 TRANSITION:
-    S: LightOn
-    N: NormalTimeDisplay
-    E: lightOff
-    O: print "NormalTimeDisplay -> LightOn"
-       time.sleep(2)
+    S: Alarming.On
+    N: Alarming.Off
+    T: 4 [OTT]
+    O: print "Alarming.On -> Alarming.Off!!!!"
+       dWatchGUI.unsetIndiglo()
+
+
+TRANSITION:
+    S: DisplayMode.TimeDisplay
+    N: DisplayMode.TimeDisplay
+    T: 1  # Repeated timed transition
+    O: #print "DisplayMode.TimeDisplay -> DisplayMode.TimeDisplay"
+       dWatchGUI.refreshTimeDisplay()
+
+TRANSITION:
+    S: DisplayMode.ChronoDisplay
+    N: DisplayMode.ChronoDisplay
+    T: 1  # Repeated timed transition
+    O: #print "DisplayMode.ChronoDisplay -> DisplayMode.ChronoDisplay"
+       #dWatchGUI.increaseTimeByOne()
+       dWatchGUI.refreshChronoDisplay()
+
+TRANSITION:
+    S: TimeRunning.RuningOn
+    N: TimeRunning.RuningOn
+    T: 1  # Repeated timed transition
+    O: #print "TimeRunning.RuningOn -> TimeRunning.RuningOn"
+       dWatchGUI.increaseTimeByOne()
+
+TRANSITION:
+    S: ChronoRunning.RuningOn
+    N: ChronoRunning.RuningOn
+    T: 1  # Repeated timed transition
+    O: print "TimeRunning.RuningOn -> TimeRunning.RuningOn"
+       dWatchGUI.increaseChronoByOne()
+
+TRANSITION:
+    S: ChronoRunning.RuningOff
+    N: ChronoRunning.RuningOn
+    E: initChrono
+    O: print "TimeRunning.RuningOff -> TimeRunning.RuningOn"
+       dWatchGUI.increaseChronoByOne()
+
+TRANSITION:
+    S: ChronoRunning.RuningOn
+    N: ChronoRunning.RuningOff
+    E: initChrono
+    O: print "TimeRunning.RuningOn -> TimeRunning.RuningOff"
+
+TRANSITION:
+    S: DisplayMode.ChronoDisplay
+    N: DisplayMode.ChronoDisplay
+    E: resetChrono
+    O: print "DisplayMode.ChronoDisplay -> DisplayMode.ChronoDisplay resetChrono"
+       #dWatchGUI.increaseTimeByOne()
+       dWatchGUI.resetChrono()
+
+TRANSITION:
+    S: DisplayMode.TimeDisplay
+    N: DisplayMode.ChronoDisplay
+    E: changeMode
+    O: print "DisplayMode.TimeDisplay -> DisplayMode.ChronoDisplay"
+       dWatchGUI.refreshChronoDisplay()
+
+TRANSITION:
+    S: DisplayMode.ChronoDisplay
+    N: DisplayMode.TimeDisplay
+    E: changeMode
+    O: print "DisplayMode.ChronoDisplay -> DisplayMode.TimeDisplay"
+       dWatchGUI.refreshTimeDisplay()
+
+TRANSITION:
+    S: BgLight.LightOff
+    N: BgLight.LightOn
+    E: lightOn
+    O: print "BgLight.LightOff -> BgLight.LightOn"
+       dWatchGUI.setIndiglo()
+
+TRANSITION:
+    S: BgLight.LightOn
+    N: BgLight.LightOff
+    T: 2 [OTT]
+    O: print "BgLight.LightOn -> BgLight.LightOff"
        dWatchGUI.unsetIndiglo()
 
 TRANSITION:
-    S: NormalTimeDisplay
-    N: DisplayAlarmMode
+    S: DisplayMode.TimeDisplay
+    N: DisplayMode.AlarmDisplay
     E: setAlarm
-    O: print "NormalTimeDisplay -> DisplayAlarmMode"
+    O: print "DisplayMode.TimeDisplay -> DisplayMode.AlarmDisplay"
        dWatchGUI.refreshAlarmDisplay()
 
 TRANSITION:
-    S: DisplayAlarmMode
-    N: NormalTimeDisplay
-    E: onoff
-    O: print "DisplayAlarm -> NormalTimeDisplay"
+    S: DisplayMode.AlarmDisplay
+    N: DisplayMode.AlarmEdit
+    E: setAlarm
+    O: print "DisplayMode.AlarmDisplay -> DisplayMode.Edit"
+       dWatchGUI.startSelection()
+       dWatchGUI.selectNext()
+       dWatchGUI.selectNext()
+       dWatchGUI.selectNext()
+
+TRANSITION:
+    S: DisplayMode.AlarmEdit
+    N: DisplayMode.AlarmDisplay
+    E: setAlarm
+    O: print "DisplayMode.AlarmDisplay -> DisplayMode.Edit"
+       dWatchGUI.stopSelection()
+
+TRANSITION:
+    S: DisplayMode.AlarmDisplay
+    N: DisplayMode.TimeDisplay
+    T: 5 [OTT]
+    O: print "DisplayMode.AlarmDisplay -> DisplayMode.TimeDisplay"
        dWatchGUI.refreshTimeDisplay()
 
-TRANSITION:
-    S: NormalTimeDisplay
-    N: ChronoMode
-    E: changeMode
-    O: print "NormalTimeDisplay -> ChronoMode"
-       timeDisplayMode = False
-       dWatchGUI.refreshChronoDisplay()
+#TRANSITION:
+#    S: DisplayMode.AlarmDisplay
+#    N: DisplayMode.TimeDisplay
+#    E: onoff
+#    O: print "DisplayMode.AlarmDisplay -> DisplayMode.TimeDisplay"
+#       dWatchGUI.refreshTimeDisplay()
 
 TRANSITION:
-    S: ChronoMode
-    N: NormalTimeDisplay
-    E: changeMode
-    O: print "ChronoMode -> NormalTimeDisplay"
-       timeDisplayMode = True
-       dWatchGUI.refreshTimeDisplay()
-
-TRANSITION:
-    S: ChronoMode
-    N: ChronoIncreasing
+    S: DisplayMode.TimeDisplay
+    N: DisplayMode.TimeEdit
     E: editTime
-    O: print "ChronoMode -> ChronoIncreasing"
-       updateChrono.start()
-          
-
-TRANSITION:
-    S: ChronoIncreasing
-    N: ChronoMode
-    E: finishEdit
-    O: print "ChronoIncreasing -> ChronoMode"
-       dWatchGUI.refreshChronoDisplay()
-
-TRANSITION:
-    S: NormalTimeDisplay
-    N: TimeEditingMode
-    E: editTime
-    O: print "NormalTimeDisplay -> TimeEditingMode"
+    O: print "DisplayMode.TimeDisplay -> DisplayModeTimeEdit"
+       dWatchGUI.startSelection()
        time.sleep(1.5)
        #Stop time running???
+
+TRANSITION:
+    S: DisplayMode.TimeEdit
+    N: DisplayMode.TimeEdit
+    E: increase
+    O: print "DisplayMode.TimeDisplay -> DisplayModeTimeEdit"
+       dWatchGUI.increaseSelection()
+       dWatchGUI.refreshTimeDisplay()
+       #time.sleep(1.5)
+       #Stop time running???
+
+TRANSITION:
+    S: DisplayMode.TimeEdit
+    N: DisplayMode.TimeEdit
+    E: editTime
+    O: print "DisplayMode.TimeDisplay -> DisplayModeTimeEdit"
+       dWatchGUI.selectNext()
+
+TRANSITION:
+    S: DisplayMode.TimeEdit
+    N: DisplayMode.TimeDisplay
+    T: 5 [OTT]
+    O: print "DisplayModeTimeEdit -> DisplayMode.TimeDisplay"
+       dWatchGUI.stopSelection()
+       dWatchGUI.refreshTimeDisplay()
